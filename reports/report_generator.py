@@ -1,0 +1,250 @@
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle
+)
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.enums import TA_CENTER
+from pathlib import Path
+
+
+def generate_report(
+    file_name,
+    extension,
+    file_size,
+    sha256,
+    actual_type,
+    risk_score,
+    risk_level,
+    status,
+    risk_reasons,
+    output_file="reports/TrustLens_AI_Report.pdf"
+):
+    """
+    Generate a PDF security analysis report.
+    """
+
+    # Create reports folder if it does not exist
+    Path("reports").mkdir(exist_ok=True)
+
+    # Create PDF
+    document = SimpleDocTemplate(
+        output_file,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=40
+    )
+
+    styles = getSampleStyleSheet()
+
+    title_style = styles["Title"]
+    title_style.alignment = TA_CENTER
+
+    heading_style = styles["Heading2"]
+    normal_style = styles["BodyText"]
+
+    story = []
+
+    # -----------------------------
+    # TITLE
+    # -----------------------------
+    story.append(
+        Paragraph(
+            "TrustLens AI",
+            title_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "File Trust & Risk Analysis Report",
+            heading_style
+        )
+    )
+
+    story.append(Spacer(1, 20))
+
+    # -----------------------------
+    # FILE INFORMATION
+    # -----------------------------
+    story.append(
+        Paragraph(
+            "1. File Information",
+            heading_style
+        )
+    )
+
+    file_data = [
+        ["Property", "Value"],
+        ["File Name", str(file_name)],
+        ["Extension", str(extension)],
+        ["File Size", str(file_size) + " KB"],
+        ["Actual File Type", str(actual_type)],
+        ["SHA-256", str(sha256)]
+    ]
+
+    file_table = Table(
+        file_data,
+        colWidths=[150, 350]
+    )
+
+    file_table.setStyle(
+        TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ])
+    )
+
+    story.append(file_table)
+
+    story.append(Spacer(1, 20))
+
+    # -----------------------------
+    # RISK ANALYSIS
+    # -----------------------------
+    story.append(
+        Paragraph(
+            "2. Risk Analysis",
+            heading_style
+        )
+    )
+
+    risk_data = [
+        ["Property", "Result"],
+        ["Risk Score", f"{risk_score} / 100"],
+        ["Risk Level", str(risk_level)],
+        ["Status", str(status)]
+    ]
+
+    risk_table = Table(
+        risk_data,
+        colWidths=[150, 350]
+    )
+
+    risk_table.setStyle(
+        TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ])
+    )
+
+    story.append(risk_table)
+
+    story.append(Spacer(1, 20))
+
+    # -----------------------------
+    # RISK REASONS
+    # -----------------------------
+    story.append(
+        Paragraph(
+            "3. Risk Indicators",
+            heading_style
+        )
+    )
+
+    if risk_reasons:
+        for reason in risk_reasons:
+            story.append(
+                Paragraph(
+                    "• " + str(reason),
+                    normal_style
+                )
+            )
+            story.append(Spacer(1, 6))
+    else:
+        story.append(
+            Paragraph(
+                "No major risk indicators detected.",
+                normal_style
+            )
+        )
+
+    story.append(Spacer(1, 20))
+
+    # -----------------------------
+    # FINAL VERDICT
+    # -----------------------------
+    story.append(
+        Paragraph(
+            "4. Final Verdict",
+            heading_style
+        )
+    )
+
+    if str(status).upper() == "SAFE":
+        verdict = (
+            "The analyzed file is classified as SAFE. "
+            "No major security risk indicators were detected."
+        )
+    elif str(status).upper() == "WARNING":
+        verdict = (
+            "The analyzed file requires caution. "
+            "Some potential risk indicators were detected."
+        )
+    else:
+        verdict = (
+            "The analyzed file is classified as HIGH RISK. "
+            "Further investigation is recommended."
+        )
+
+    story.append(
+        Paragraph(
+            verdict,
+            normal_style
+        )
+    )
+
+    story.append(Spacer(1, 30))
+
+    story.append(
+        Paragraph(
+            "Generated by TrustLens AI | File Trust & Risk Analysis System",
+            normal_style
+        )
+    )
+
+    # Build PDF
+    document.build(story)
+
+    return output_file
+
+
+# -----------------------------------------
+# TEST
+# -----------------------------------------
+if __name__ == "__main__":
+
+    test_report = generate_report(
+        file_name="sample.txt",
+        extension=".txt",
+        file_size="0.04",
+        sha256="4658578ae5283aa7cff18663e6c8b3e482b1d5e97ac2a72cca2ef1884ea5604d",
+        actual_type="TXT",
+        risk_score=10,
+        risk_level="LOW",
+        status="SAFE",
+        risk_reasons=[
+            "No suspicious indicators detected"
+        ]
+    )
+
+    print("====================================")
+    print("TrustLens AI Report Generator")
+    print("====================================")
+    print("Report generated successfully!")
+    print("File:", test_report)
